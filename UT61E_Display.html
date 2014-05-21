@@ -1,0 +1,392 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="UTF-8">
+    <title>UNI-T UT61E Display</title>
+    <style>body { margin: 0; padding: 0; }</style>
+  </head>
+
+  <body>
+    <!--<p>Display content:</p>-->
+
+    <object id="display" data="images/UNI-T_UT61E_Display.svg" type="image/svg+xml">
+    </object>
+
+    <script>
+    // SVG Manipulation
+    var obj = document.getElementById("display");
+    var svgDoc;
+
+    obj.addEventListener("load",function() {
+      svgDoc = obj.contentDocument;
+      //alert("SVG contentDocument Loaded!");
+      setTimeout(init_display, 300);
+      updateWindow();
+      window.onresize = updateWindow;
+    }, false);
+
+    var w = window,
+        d = document,
+        e = d.documentElement,
+        g = d.getElementsByTagName('body')[0],
+        x = w.innerWidth || e.clientWidth || g.clientWidth,
+        y = w.innerHeight|| e.clientHeight|| g.clientHeight;
+
+    function updateWindow(){
+      x = w.innerWidth || e.clientWidth || g.clientWidth;
+      y = w.innerHeight|| e.clientHeight|| g.clientHeight;
+      obj.setAttribute("width", x-10)
+      obj.setAttribute("height", y-10);
+      //svgDoc.setAttribute("width", x).setAttribute("height", y);
+    }
+
+    var all_digits = ["DIGIT4", "DIGIT3", "DIGIT2", "DIGIT1", "DIGIT0"];
+    var initial_hiding = ["DC", "AC", "HOLD", "EF", "REL", "MIN", "MAX", "PMIN",
+        "PMAX", "OL", "BARMINUS", "TRANSMISSION", "MINUS", "BATT", "SLEEP"];
+    var bar_graph_labels = ["LABEL000", "LABEL050", "LABEL100",
+          "LABEL150", "LABEL200"];
+    var units = ["MICRO", "MILLI", "VOLT", "AMPERE", "CELSIUS",
+          "FAHRENHEIT", "PERCENT", "MEGA", "KILO", "OHM", "HERTZ",
+          "MILLIF", "MICROF", "NANOF", "FARAD"];
+    var modes = ["MANU", "AUTO"];
+    var special_modes = ["DIODE", "CONTINUITY"]
+
+    function init_display() {
+      hide_all();
+      set_permanent();
+      set_typical_initial();
+      //setInterval(function(){show_random_value();}, 1000);
+      setInterval(function(){
+        loadJSON('/api/get_status',
+          function(data) { show_real_data(data); },
+          function(xhr) { console.error(xhr); }
+        );
+      }, 200);
+    };
+
+    function hide_all() {
+      for (var i = 0; i < initial_hiding.length; i++)
+        hide(initial_hiding[i]);
+      show_mode(null);
+      hide_all_units();
+      //for (var i = 0; i < all_digits.length; i++)
+      //  hide(all_digits[i]);
+      for (var i = 0; i <= 4; i++) {
+        clearDigit(i);
+      };
+      for (var i = 0; i <= 220; i += 5)
+        hide("BAR"+("00" + i).slice(-3));
+      for (var i = 0; i < bar_graph_labels.length; i++)
+        hide(bar_graph_labels[i]);
+      hide_special_modes();
+    };
+
+    function loadJSON(path, success, error)
+    {
+      var xhr = new XMLHttpRequest();
+      xhr.onreadystatechange = function()
+      {
+        if (xhr.readyState === 4) {
+          if (xhr.status === 200) {
+            if (success)
+              success(JSON.parse(xhr.responseText));
+          } else {
+            if (error)
+              error(xhr);
+          }
+        }
+      };
+      xhr.open("GET", path, true);
+      xhr.send();
+    }
+    function hide_bargraph_entirely() {
+      hide_bargraph_labels();
+    };
+    function hide_bargraph_labels() {
+      for (var i = 0; i < bar_graph_labels.length; i++)
+        hide(bar_graph_labels[i]);
+    };
+    function show_bargraph_labels() {
+      for (var i = 0; i < bar_graph_labels.length; i++)
+        show(bar_graph_labels[i]);
+    };
+    function hide_special_modes() {
+      for (var i = 0; i < special_modes.length; i++)
+        hide(special_modes[i]);
+    };
+    function display_bargraph_ol() {
+      show_bargraph_labels();
+      for (var i = 0; i <= 220; i += 5)
+        show("BAR"+("00" + i).slice(-3));
+      show("OL");
+    };
+    function display_bargraph_limit(bar_limit) {
+      show_bargraph_labels();
+      hide_most_bars();
+      for (var i = 0; (i <= bar_limit) && (i <= 220); i += 5)
+        show("BAR"+("00" + i).slice(-3));
+    };
+
+    function show_real_data(data) {
+      hide_all();
+      set_permanent();
+      if (data['packet_details']['options']['OL'] || data['packet_details']['options']['UL']) {
+        if (data['packet_details']['options']['OL']) {
+          display_bargraph_ol();
+          setDigit(4,"");
+          setDigit(3,"O");
+          setDigit(2,"L");
+          setDigit(1,"");
+          setDigit(0,"");
+          setDecimalPoint(2);
+        }
+      }
+      else {
+        //show_value(data['display_value'] + " " + data['display_unit']);
+        var digit4 = data['packet_details']['data_bytes']['d_digit4'] - 48;
+        var digit3 = data['packet_details']['data_bytes']['d_digit3'] - 48;
+        var digit2 = data['packet_details']['data_bytes']['d_digit2'] - 48;
+        var digit1 = data['packet_details']['data_bytes']['d_digit1'] - 48;
+        var digit0 = data['packet_details']['data_bytes']['d_digit0'] - 48;
+        var dp = data['packet_details']['range']['dp_digit_position'];
+        //var leading_zeros = 0;
+        setDigit(4, digit4);
+        setDigit(3, digit3);
+        setDigit(2, digit2);
+        setDigit(1, digit1);
+        setDigit(0, digit0);
+        setDecimalPoint(dp);
+        var number_string = "" + digit4 + digit3 + digit2 + digit1 + digit0;
+        var pos_without_leading_zeros = ("" + parseInt(number_string)).length;
+        for (var i = 4; i > dp && i >= pos_without_leading_zeros; i--)
+          setDigit(i, "");
+        var bar_limit = Math.abs(parseFloat(data['display_value'])) * Math.pow(10,dp-2); // should be maximum 220.0
+        display_bargraph_limit(bar_limit);
+      };
+      var negative = false;
+      if (data['value'] < 0.0) negative = true;
+      if (negative) { show("MINUS"); show("BARMINUS"); }
+      else { hide("MINUS"); hide("BARMINUS"); };
+      var mode = data['packet_details']['options']['AUTO'] ? 'AUTO' : 'MANU'
+      show_mode(mode);
+      var current = null
+      if (data['packet_details']['options']['DC']) current = 'DC';
+      if (data['packet_details']['options']['AC']) current = 'AC';
+      show_current(data['current']);
+      if (data['packet_details']['options']['HOLD']) show('HOLD');
+      else hide('HOLD');
+      if (data['packet_details']['options']['REL']) show('REL');
+      else hide('REL');
+      if (data['packet_details']['options']['PMAX']) show('PMAX');
+      else hide('PMAX');
+      if (data['packet_details']['options']['PMIN']) show('PMIN');
+      else hide('PMIN');
+      if (data['packet_details']['options']['BATT']) show('BATT');
+      else hide('BATT');
+      if (possible_units.indexOf(data['display_unit']) != -1) display_unit(data['display_unit'])
+      if (data['mode'] == 'continuity') show('CONTINUITY');
+      if (data['mode'] == 'diode') show('DIODE');
+    };
+    function show_random_value() {
+      var random_unit = possible_units[Math.floor(Math.random()*possible_units.length)];
+      var random_value = Math.random() * 9.999;
+      if (Math.random() < 0.5) random_value = -random_value;
+      show_value(random_value + " " + random_unit);
+    };
+    function show_random_mode() {
+      for (var i = 0; i < modes.length; i++)
+        hide(modes[i]);
+      var random_mode = modes[Math.floor(Math.random()*modes.length)];
+      show(random_mode);
+    };
+    function show_mode(mode) {
+      for (var i = 0; i < modes.length; i++)
+        hide(modes[i]);
+      if (mode) show(mode);
+    };
+    function show_current(current) {
+      hide('DC');
+      hide('AC');
+      if (current) show(current);
+    };
+    function show_value(input_string) {
+      //var pattern = /(\w.+)\s(\w.+)/;
+      //pattern.exec(input_string);
+      var parts = input_string.split(" ");
+      var value = parseFloat(parts[0]);
+      var unit = parts[1];
+      setDigits(value);
+      display_unit(unit);
+    };
+
+    function set_permanent() {
+      show("TRANSMISSION");
+    };
+    function set_typical_initial() {
+      //setDigit(0,"0");
+      //setDigit(1,"0");
+      //setDigit(2,"0");
+      //setDigit(3,"0");
+      //setDigit(4,"0");
+      //setDigits(0.0000);
+      //show_value("0.1200 mV");
+      //show_value("-1.1200 mV");
+      //show_value("-9.9999 mA");
+      //setDigits(99.008);
+      show_bargraph_labels();
+      show("BAR000");
+      //show("VOLT");
+      //show("DC");
+      //show("AUTO");
+    };
+
+    DIGITMAP = {
+        "0": "ABCDEF", "1": "BC", "2": "ABGED", "3": "ABCDG",
+        "4": "BCFG", "5": "AFGCD", "6": "AFEDCG", "7": "ABC",
+        "8": "ABCDEFG", "9": "ABCDFG", "":"",
+        "O": "ABCDEF", "L": "DEF", "": ""
+    };
+    function clearDigit(n) {
+      hide("DIGIT" + n + "A");
+      hide("DIGIT" + n + "B");
+      hide("DIGIT" + n + "C");
+      hide("DIGIT" + n + "D");
+      hide("DIGIT" + n + "E");
+      hide("DIGIT" + n + "F");
+      hide("DIGIT" + n + "G");
+      if (n != 0) hide("DIGIT" + n + "DP");
+    };
+    function setDecimalPoint(n) {
+        show("DIGIT" + n + "DP");
+    };
+    function setDigit(n, value) {
+      clearDigit(n);
+      //console.log(value);
+      var chosenSegs = DIGITMAP[value];
+      //console.log(chosenSegs);
+      for (var i = 0; i < chosenSegs.length; i++)
+        show("DIGIT" + n + chosenSegs[i]);
+    };
+    function setDigits(value) {
+      if (value > 22000.0) {
+        console.log("Cannot display values that big!")
+        return;
+      };
+      var negative = 0;
+      if (value < 0.0) negative = true;
+      if (negative) show("MINUS");
+      else hide("MINUS");
+      value = Math.abs(value);
+      var position = 5;
+      var digits;
+      if (Math.abs(value) > 0.0 && Math.abs(value) < 1.0) digits = value.toPrecision(4);
+      else digits = value.toPrecision(5);
+      //console.log(digits);
+      for (var d = 0; d < digits.length; d++) {
+        if (digits[d] != ".") {
+          position -= 1;
+          setDigit(position, digits[d]);
+        }
+        else setDecimalPoint(position);
+      };
+      hide_most_bars();
+      for (var i = 0; (i <= value * 100) && (i <= 220); i += 5)
+        show("BAR"+("00" + i).slice(-3));
+    };
+
+    function hide_most_bars() {
+      for (var i = 5; i <= 220; i += 5)
+        hide("BAR"+("00" + i).slice(-3));
+      hide("OL");
+    };
+
+    function hide_all_units() {
+      for (var i = 0; i < units.length; i++)
+        hide(units[i]);
+    };
+
+    var possible_units = ["V", "mV", "A", "mA", "µA", "F", "mF", "µF", "nF", "Ω", "kΩ", "MΩ", "Hz", "kHz", "MHz", "%"];
+    function display_unit(input_string) {
+      hide_all_units();
+      //switch(input_string.slice(-1)) {
+      switch(input_string) {
+      case "V":
+          show("VOLT");
+          break;
+      case "mV":
+          show("MILLI");
+          show("VOLT");
+          break;
+      case "A":
+          show("AMPERE");
+          break;
+      case "mA":
+          show("MILLI");
+          show("AMPERE");
+          break;
+      case "µA":
+          show("MICRO");
+          show("AMPERE");
+          break;
+      case "F":
+          show("FARAD");
+          break;
+      case "mF":
+          show("MILLIF");
+          show("FARAD");
+          break;
+      case "µF":
+          show("MICROF");
+          show("FARAD");
+          break;
+      case "nF":
+          show("NANOF");
+          show("FARAD");
+          break;
+      case "Ω":
+          show("OHM");
+          break;
+      case "kΩ":
+          show("OHM");
+          show("KILO");
+          break;
+      case "MΩ":
+          show("OHM");
+          show("MEGA");
+          break;
+      case "Hz":
+          show("HERTZ");
+          break;
+      case "kHz":
+          show("HERTZ");
+          show("KILO");
+          break;
+      case "MHz":
+          show("HERTZ");
+          show("MEGA");
+          break;
+      case "%":
+          show("PERCENT");
+          break;
+      default:
+          break;
+      }
+    };
+
+    function show(name) {
+      //console.log(name);
+      var el = svgDoc.getElementById("led" + name);
+      el.setAttribute("display", "inline");
+    };
+    function hide(name) {
+      //console.log(name);
+      var el = svgDoc.getElementById("led" + name);
+      el.setAttribute("display", "none");
+    };
+
+
+    </script>
+
+  </body>
+
+</html>

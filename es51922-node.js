@@ -8,6 +8,7 @@ var app = express(),
 var last_message = "DIGIT3A DIGIT3B DIGIT3C DIGIT3D DIGIT3E DIGIT3F DIGIT2A DIGIT2E DIGIT2F DIGIT2G DIGIT1A DIGIT1E DIGIT1F DIGIT1G" 
 
 var io = require('socket.io').listen(server);
+io.set('log level', 1);
 
 io.sockets.on('connection', function (socket) {
   socket.emit('new state', last_message);
@@ -25,15 +26,13 @@ udpserver.on("error", function (err) {
 });
 
 udpserver.on("message", function (msg, rinfo) {
-  console.log("server got: " + msg + " from " +
-    rinfo.address + ":" + rinfo.port);
   io.sockets.emit('new state', msg.toString());
   last_message = msg.toString();
 });
 
 udpserver.on("listening", function () {
   var address = udpserver.address();
-  console.log("server listening " +
+  console.log("Server listening for incoming UDP packets at " +
       address.address + ":" + address.port);
 });
 

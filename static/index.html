@@ -84,9 +84,11 @@
       //$('#container').html(data);
       //$('time').html('Last Update:' + _data.time);
       var segments = data.trim().split(" ");
+      //var start = new Date();
       hide_all();
       for (var i = 0; i < segments.length; i++)
         show(segments[i]);
+      //console.log(new Date() - start);
     });
     </script>
   </body>

@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="UTF-8">
+    <title>UNI-T UT61E Display</title>
+    <style>body { margin: 0; padding: 0; }</style>
+  </head>
+
+  <body>
+    <object id="display" data="UNI-T_UT61E_Display.svg" type="image/svg+xml">
+    </object>
+
+    <script>
+    // SVG Manipulation
+    var obj = document.getElementById("display");
+    var svgDoc;
+
+    obj.addEventListener("load",function() {
+      svgDoc = obj.contentDocument;
+      //alert("SVG contentDocument Loaded!");
+      setTimeout(init_display, 300);
+      updateWindow();
+      window.onresize = updateWindow;
+    }, false);
+
+    var w = window,
+        d = document,
+        e = d.documentElement,
+        g = d.getElementsByTagName('body')[0],
+        x = w.innerWidth || e.clientWidth || g.clientWidth,
+        y = w.innerHeight|| e.clientHeight|| g.clientHeight;
+
+    function updateWindow(){
+      x = w.innerWidth || e.clientWidth || g.clientWidth;
+      y = w.innerHeight|| e.clientHeight|| g.clientHeight;
+      obj.setAttribute("width", x-10)
+      obj.setAttribute("height", y-10);
+      //svgDoc.setAttribute("width", x).setAttribute("height", y);
+    }
+
+    var EVERYTHING = ["TRANSMISSION",
+        "DC", "AC", "AUTO", "MANU", "HOLD", "EF", "REL", "MIN", "MAX", "PMIN", "PMAX", "OL", "BARMINUS", "TRANSMISSION", "MINUS", "BATT", "SLEEP", "DIODE", "CONTINUITY",
+        "DIGIT0A", "DIGIT0B", "DIGIT0C", "DIGIT0D", "DIGIT0E", "DIGIT0F", "DIGIT0G",
+        "DIGIT1A", "DIGIT1B", "DIGIT1C", "DIGIT1D", "DIGIT1E", "DIGIT1F", "DIGIT1G",
+        "DIGIT2A", "DIGIT2B", "DIGIT2C", "DIGIT2D", "DIGIT2E", "DIGIT2F", "DIGIT2G",
+        "DIGIT3A", "DIGIT3B", "DIGIT3C", "DIGIT3D", "DIGIT3E", "DIGIT3F", "DIGIT3G",
+        "DIGIT4A", "DIGIT4B", "DIGIT4C", "DIGIT4D", "DIGIT4E", "DIGIT4F", "DIGIT4G",
+        "DIGIT4DP", "DIGIT3DP", "DIGIT2DP", "DIGIT1DP",
+        "LABEL000", "LABEL050", "LABEL100", "LABEL150", "LABEL200",
+        "BAR000", "BAR005", "BAR010", "BAR015", "BAR020", "BAR025", "BAR030", "BAR035", "BAR040", "BAR045", "BAR050", "BAR055", "BAR060", "BAR065", "BAR070", "BAR075", "BAR080", "BAR085", "BAR090", "BAR095", "BAR100", "BAR105", "BAR110", "BAR115", "BAR120", "BAR125", "BAR130", "BAR135", "BAR140", "BAR145", "BAR150", "BAR155", "BAR160", "BAR165", "BAR170", "BAR175", "BAR180", "BAR185", "BAR190", "BAR195", "BAR200", "BAR205", "BAR210", "BAR215", "BAR220",
+        "MICRO", "MILLI", "VOLT", "AMPERE", "CELSIUS", "FAHRENHEIT", "PERCENT", "MEGA", "KILO", "OHM", "HERTZ", "MILLIF", "MICROF", "NANOF", "FARAD"];
+
+    function init_display() {
+      //hide_all();
+    };
+
+    function hide_all() {
+      for (var i = 0; i < EVERYTHING.length; i++)
+        hide(EVERYTHING[i]);
+    };
+
+    function show(name) {
+      //console.log(name);
+      var el = svgDoc.getElementById("led" + name);
+      el.setAttribute("display", "inline");
+    };
+    function hide(name) {
+      //console.log(name);
+      var el = svgDoc.getElementById("led" + name);
+      el.setAttribute("display", "none");
+    };
+
+    </script>
+
+    <!-- <div id="container"></div> -->
+
+    <script src="socket.io/socket.io.js"></script>
+    <script src="http://code.jquery.com/jquery-1.7.1.min.js"></script>
+    <script>
+    // creating a new websocket
+    var socket = io.connect();
+    socket.on('new state', function (data) {
+      // convert the json string into a valid javascript object
+      //var _data = JSON.parse(data);
+      //$('#container').html(data);
+      //$('time').html('Last Update:' + _data.time);
+      var segments = data.trim().split(" ");
+      hide_all();
+      for (var i = 0; i < segments.length; i++)
+        show(segments[i]);
+    });
+    </script>
+  </body>
+</html>

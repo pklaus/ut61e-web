@@ -29,6 +29,6 @@ or using a pre-recorded data file:
 ### Requirements
 
 You need Python and node.js
-The Python module ut61e is required as well as the node.js modules
-socket.io and express.
+The Python module *ut61e* is required as well as the node.js modules
+*socket.io* and *express*.
 

@@ -11,25 +11,26 @@ DIGITMAP = {
     "U": "BCDEF", "O": "ABCDEF", "L": "DEF", "": "",
 }
 
-def set_ol():
-    segments = ['OL']
+def set_ol(dp, bargraph_enabled = False):
+    segments = []
     segments += set_digit(4,'')
     segments += set_digit(3,'O')
     segments += set_digit(2,'L')
     segments += set_digit(1,'')
     segments += set_digit(0,'')
-    segments.append("DIGIT2DP")
-    segments += show_bargraph(220, ol=True)
+    segments.append("DIGIT" + str(dp) + "DP")
+    if bargraph_enabled:
+        segments += show_bargraph(220, ol=True)
     return segments
 
 def set_ul():
+    segments = []
     segments += set_digit(4,'')
     segments += set_digit(3,'U')
     segments += set_digit(2,'L')
     segments += set_digit(1,'')
     segments += set_digit(0,'')
     segments.append("DIGIT1DP")
-    segments += show_bargraph(0, ul=True)
     return segments
 
 def set_digit(n, value):
@@ -79,8 +80,16 @@ def active_segments(results):
     if pd['options']['PMAX']: segs.append("PMAX")
     if pd['options']['MIN']: segs.append("MIN")
     if pd['options']['MAX']: segs.append("MAX")
-    if pd['options']['OL']:
-        segs += set_ol()
+    if results['mode'] == 'continuity': segs.append("CONTINUITY")
+    if results['mode'] == 'diode': segs.append("DIODE")
+    bargraph_enabled = False
+    if results['mode'] not in ['frequency', 'duty_cycle', 'capacitance']:
+        bargraph_enabled = True
+    if results['mode'] == 'frequency' and results['display_unit'] in ['kHz', 'MHz']:
+        bargraph_enabled = True
+    dp = pd['range']['dp_digit_position']
+    if pd['options']['OL']: segs += set_ol(dp, bargraph_enabled = bargraph_enabled)
+    elif pd['options']['UL']: segs += set_ul()
     else:
         digit4 = pd['data_bytes']['d_digit4'] - 48
         digit3 = pd['data_bytes']['d_digit3'] - 48
@@ -88,13 +97,15 @@ def active_segments(results):
         digit1 = pd['data_bytes']['d_digit1'] - 48
         digit0 = pd['data_bytes']['d_digit0'] - 48
         digits = [digit0, digit1, digit2, digit3, digit4]
-        dp = pd['range']['dp_digit_position']
-        significant_digits = len(str(int("".join([str(d) for d in digits[::-1]]))))
+        join_ints = lambda nums: int(''.join(str(i) for i in nums))
+        significant_digits = len(str(join_ints(digits[::-1])))
         for i in range(5):
             if i <= dp or i < significant_digits:
                 segs += set_digit(i, digits[i])
         segs.append("DIGIT" + str(dp) + "DP")
-        segs += show_bargraph(str(digit4) + str(digit3) + str(digit2))
+        if results['value'] < 0.0: segs += ["MINUS", "BARMINUS"]
+        if bargraph_enabled:
+            segs += show_bargraph(str(digit4) + str(digit3) + str(digit2))
     du = results['display_unit']
     if du in UNITMAP: segs += UNITMAP[du]
     return segs

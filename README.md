@@ -10,7 +10,7 @@ Start using:
 
 and feed using live-data:
 
-    he2325u_hidapi.py | ./es51922-to-lcd.py | while read x
+    he2325u_hidapi | ./es51922-to-lcd.py | while read x
     do
       echo "$x" | ncat -4u localhost 5005
     done
@@ -28,7 +28,11 @@ or using a pre-recorded data file:
 
 ### Requirements
 
-You need Python and node.js
-The Python module *ut61e* is required as well as the node.js modules
-*socket.io* and *express*.
+You need Python and node.js.
 
+The Python module [ut61e][] is required (`pip install ut61e`) as well as
+the node.js modules [socket.io][] and [express][] (`npm install socket.io express`).
+
+[ut61e]: https://pypi.python.org/pypi/ut61e
+[socket.io]: https://www.npmjs.com/package/socket.io
+[express]: https://www.npmjs.com/package/express
